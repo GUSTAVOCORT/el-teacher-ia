@@ -180,6 +180,22 @@
     .ld{width:7px;height:7px;border-radius:50%}
     .lv{background:#14532d}.la{background:#451a03}.lr{background:#7f1d1d}
 
+    /* ══ TOGGLE IDIOMA TUTOR ════════════════ */
+    #toggle-idioma{display:flex;align-items:center;gap:0;border-radius:20px;overflow:hidden;border:1px solid var(--border2);flex-shrink:0}
+    .ti-btn{background:var(--bg);border:none;color:var(--text3);padding:5px 10px;cursor:pointer;font-size:.73rem;font-weight:600;transition:background .15s,color .15s;white-space:nowrap}
+    .ti-btn.activo{background:var(--purple2);color:#fff}
+
+    /* ══ TRADUCCIÓN AL ESPAÑOL ══════════════ */
+    #pan-trad{background:#0a1a10;border:1px solid #1a5a30;border-radius:11px;padding:11px 13px;width:100%;max-width:600px;display:none;flex-direction:column;gap:6px}
+    #pan-trad.vis{display:flex}
+    .trad-lbl{font-size:.63rem;font-weight:700;color:#4ade80;text-transform:uppercase;letter-spacing:.07em}
+    .trad-txt{font-size:.9rem;color:#bbf7d0;line-height:1.65}
+    #btn-trad-cerrar{align-self:flex-end;background:none;border:none;color:#2a6a40;font-size:.7rem;cursor:pointer;padding:0}
+    #btn-trad-cerrar:hover{color:#4ade80}
+    #btn-traducir{border-color:#1a5a30;color:#4ade80}
+    #btn-traducir:hover{background:#0a1a10;border-color:#4ade80}
+    #btn-traducir.cargando{opacity:.5;pointer-events:none}
+
     .spinner{display:inline-block;width:11px;height:11px;border:2px solid #222;border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
     @keyframes spin{to{transform:rotate(360deg)}}
     .hist-sep{font-size:.66rem;color:#2a2a2a;text-align:center;width:100%;max-width:600px}
@@ -346,6 +362,11 @@
     <select id="select-voz" onchange="cambiarVoz()"></select>
     <button class="btn-sm" onclick="previsualizarVoz()">▶ Probar</button>
     <button class="btn-sm" id="btn-mute" onclick="toggleMute()">🔊 Activa</button>
+    <div id="toggle-idioma">
+      <button class="ti-btn activo" id="ti-en" onclick="setIdioma('en')">🇺🇸 EN</button>
+      <button class="ti-btn" id="ti-libre" onclick="setIdioma('libre')">🔄 Libre</button>
+      <button class="ti-btn" id="ti-es" onclick="setIdioma('es')">🇪🇸 ES</button>
+    </div>
   </div>
 
   <!-- Lección introductoria CP8 -->
@@ -372,7 +393,15 @@
 
   <div class="accs" id="accs">
     <button class="btn-ac" onclick="repetir()">🔁 Repetir</button>
+    <button class="btn-ac" id="btn-traducir" onclick="traducirRespuesta()">🇪🇸 Ver en español</button>
     <button class="btn-ac" id="btn-prac" style="display:none" onclick="abrirPrac()">🎯 Practicar frase</button>
+  </div>
+
+  <!-- Panel de traducción al español -->
+  <div id="pan-trad">
+    <div class="trad-lbl">🇪🇸 Traducción al español</div>
+    <div class="trad-txt" id="trad-txt">...</div>
+    <button id="btn-trad-cerrar" onclick="cerrarTrad()">✕ Cerrar</button>
   </div>
 
   <div id="pan-prac">
@@ -491,6 +520,7 @@ const PROMPT_SUFIJO=`\n\nWhen the student speaks:\n1. Correct grammar/vocabulary
 let apiKey='',tutorSel=null,temaSel=null,nivelSel=null;
 let historialIA=[],ultimaResp='',frasePrac='';
 let vozSel=null,vozActiva=true,escuchando=false,textoAcum='';
+let idiomaRespuesta='en'; // 'en' o 'es'
 let micBloqueado=true; // bloqueado hasta que el estudiante presione "Empezar"
 // Sesión
 let sesStart=null,sesTurnos=0,sesCorrecciones=[],ultimoMsgUser='';
@@ -615,6 +645,10 @@ function iniciarSesion(){
 
   // Reset sesión
   sesStart=Date.now(); sesTurnos=0; sesCorrecciones=[]; ultimaResp=''; frasePrac=''; textoAcum='';
+  idiomaRespuesta='en';
+  document.getElementById('ti-en').classList.add('activo');
+  document.getElementById('ti-libre').classList.remove('activo');
+  document.getElementById('ti-es').classList.remove('activo');
   micBloqueado=true;
   document.getElementById('btn-mic').disabled=true;
   document.getElementById('caja-t').className='vacia';
@@ -863,11 +897,11 @@ function toggleMute(){
   b.classList.toggle('silencio',!vozActiva);
   if(!vozActiva){window.speechSynthesis.cancel();detVoz();}
 }
-function hablarTexto(txt,esTutor=true){
+function hablarTexto(txt,esTutor=true,lang='en-US'){
   if(!vozActiva)return;
   window.speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(txt);
-  u.lang='en-US';u.rate=0.88;u.pitch=1.05;
+  u.lang=lang;u.rate=0.88;u.pitch=1.05;
   if(vozSel)u.voice=vozSel;
   if(esTutor){
     const bm=document.getElementById('btn-mic');
@@ -970,7 +1004,14 @@ async function consultarTutor(msg){
   const ct=document.getElementById('caja-t');
   ct.innerHTML='<span class="spinner"></span> Pensando...';ct.classList.remove('vacia');
   document.getElementById('accs').classList.remove('vis');
-  historialIA.push({role:'user',parts:[{text:msg}]});
+  document.getElementById('pan-trad').classList.remove('vis');
+  // Inyectar instrucción de idioma al mensaje del usuario
+  const instrIdioma={
+    en: '\n\n[INSTRUCTION: Respond in ENGLISH as usual.]',
+    es: '\n\n[INSTRUCCIÓN: Responde COMPLETAMENTE EN ESPAÑOL. Corrige errores de inglés pero escribe toda tu respuesta en español. Mantén el formato ✅/💬/📝.]',
+    libre: '\n\n[INSTRUCCIÓN DE IDIOMA — MODO LIBRE: Elige el idioma de tu respuesta según el contexto: si el estudiante escribió en español, respóndele en español; si escribió en inglés, responde en inglés; puedes mezclar ambos idiomas para explicar mejor (por ejemplo, dar una corrección en inglés y explicarla en español). El objetivo es que el estudiante entienda perfectamente y aprenda inglés de manera natural. Mantén el formato ✅/💬/📝.]'
+  }[idiomaRespuesta]||'';
+  historialIA.push({role:'user',parts:[{text:msg+instrIdioma}]});
   const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),15000);
   const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
   try{
@@ -997,7 +1038,17 @@ async function consultarTutor(msg){
       badge.textContent=`${sesCorrecciones.length} corrección${sesCorrecciones.length!==1?'es':''}`;
     } else {frasePrac='';btnP.style.display='none';}
 
-    hablarTexto(exChat(ia),true);
+    // Detectar idioma para TTS
+    const txtChat=exChat(ia);
+    let langTTS='en-US';
+    if(idiomaRespuesta==='es') langTTS='es-ES';
+    else if(idiomaRespuesta==='libre'){
+      // Heurística simple: contar palabras comunes en español
+      const esWords=/\b(el|la|los|las|un|una|que|de|en|es|son|con|por|para|como|pero|más|muy|bien|sí|no|hola|gracias)\b/gi;
+      const matches=(txtChat.match(esWords)||[]).length;
+      langTTS=matches>2?'es-ES':'en-US';
+    }
+    hablarTexto(txtChat,true,langTTS);
     document.getElementById('estado').textContent='🔊 Escucha...';
     if(historialIA.length>4){
       agregarHist(msg,ia);
@@ -1014,6 +1065,69 @@ function agregarHist(u,t){
   const h=document.getElementById('historial');h.prepend(mt);h.prepend(mu);
 }
 function mostrarErr(msg){const e=document.getElementById('err-msg');e.textContent=msg;e.style.display='block';document.getElementById('estado').textContent='Algo salió mal.';}
+
+// ══════════════════════════════════════════════
+//  TOGGLE IDIOMA DE RESPUESTA
+// ══════════════════════════════════════════════
+function setIdioma(lang){
+  idiomaRespuesta=lang;
+  document.getElementById('ti-en').classList.toggle('activo',lang==='en');
+  document.getElementById('ti-libre').classList.toggle('activo',lang==='libre');
+  document.getElementById('ti-es').classList.toggle('activo',lang==='es');
+  // Ocultar "Ver en español" si ya responde en español o libre
+  const btnTrad=document.getElementById('btn-traducir');
+  if(btnTrad) btnTrad.style.display=lang==='en'?'inline-block':'none';
+  // Notificar al usuario
+  const msgs={en:'🇺🇸 El tutor responderá siempre en inglés',es:'🇪🇸 El tutor responderá siempre en español',libre:'🔄 El tutor elegirá el idioma libremente'};
+  const est=document.getElementById('estado');
+  if(est) est.textContent=msgs[lang]||'';
+  setTimeout(()=>{if(est&&!escuchando)est.textContent='✅ Tu turno — presiona y habla';},2500);
+}
+
+// ══════════════════════════════════════════════
+//  TRADUCCIÓN AL ESPAÑOL
+// ══════════════════════════════════════════════
+async function traducirRespuesta(){
+  if(!ultimaResp) return;
+  const pan=document.getElementById('pan-trad');
+  const txtEl=document.getElementById('trad-txt');
+  const btn=document.getElementById('btn-traducir');
+
+  // Si ya está visible, cerrar
+  if(pan.classList.contains('vis')){cerrarTrad();return;}
+
+  // Extraer solo el mensaje del tutor (sin correcciones ni notas técnicas)
+  const mensajeEn=exChat(ultimaResp);
+  // También incluir la corrección si existe
+  const corr=exCorr(ultimaResp);
+
+  btn.classList.add('cargando');
+  btn.textContent='⏳ Traduciendo...';
+  pan.classList.add('vis');
+  txtEl.innerHTML='<span class="spinner"></span> Traduciendo...';
+
+  const prompt=`Translate the following English text to Spanish naturally. Only return the translation, nothing else.\n\n"${mensajeEn}"${corr?`\n\nAlso translate this corrected phrase: "${corr}"` : ''}`;
+
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
+  const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),10000);
+  try{
+    const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}]}),signal:ctrl.signal});
+    clearTimeout(tid);
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data=await resp.json();
+    const trad=data.candidates?.[0]?.content?.parts?.[0]?.text||'No se pudo traducir.';
+    txtEl.textContent=trad.trim();
+  }catch(err){
+    clearTimeout(tid);
+    txtEl.textContent='No se pudo traducir. Verifica tu conexión.';
+  }
+  btn.classList.remove('cargando');
+  btn.textContent='🇪🇸 Ver en español';
+}
+function cerrarTrad(){
+  document.getElementById('pan-trad').classList.remove('vis');
+}
 
 // ══════════════════════════════════════════════
 //  INICIO
