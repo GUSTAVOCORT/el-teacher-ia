@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>El Teacher IA</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Teacher IA" />
+  <meta name="description" content="Tu tutor de inglés con inteligencia artificial" />
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0f0f1a;--bg2:#151525;--bg3:#1a1a2e;
+      --border:#252545;--border2:#333;
+      --purple:#a78bfa;--purple2:#7c3aed;--purple3:#4f46e5;
+      --green:#22c55e;--text:#e0e0e0;--text2:#aaa;--text3:#666;
+    }
+    body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+    /* ── PANTALLAS ─────────────────────────── */
+    .screen{display:none;flex-direction:column;align-items:center;min-height:100vh;padding:22px 18px 80px}
+    .screen.activo{display:flex}
+
+    /* ── UTILES ────────────────────────────── */
+    .logo{font-size:1.45rem;font-weight:800;color:var(--purple);margin-bottom:3px}
+    .logo span{color:var(--text)}
+    .tagline{font-size:.76rem;color:var(--text3);margin-bottom:22px}
+    .sec-titulo{font-size:.68rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;width:100%;max-width:560px;margin-bottom:9px}
+    .btn-principal{background:linear-gradient(135deg,var(--purple2),var(--purple3));border:none;border-radius:12px;color:#fff;padding:13px 20px;font-size:.95rem;font-weight:700;cursor:pointer;width:100%;transition:opacity .15s}
+    .btn-principal:hover{opacity:.9}
+    .btn-principal:disabled{opacity:.35;cursor:not-allowed}
+    .btn-sec{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;color:var(--text2);padding:10px 18px;font-size:.85rem;cursor:pointer;transition:border-color .15s}
+    .btn-sec:hover{border-color:var(--purple);color:var(--purple)}
+    .btn-sm{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text2);padding:5px 10px;cursor:pointer;font-size:.75rem;white-space:nowrap}
+    .btn-sm:hover{border-color:var(--purple);color:var(--purple)}
+
+    /* ══ P0: API KEY ═══════════════════════ */
+    #p-key{justify-content:center}
+    .key-card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:26px 22px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:14px;text-align:center}
+    .key-icon{font-size:2.6rem}
+    .key-card h2{font-size:1.15rem;color:var(--purple)}
+    .key-card p{font-size:.81rem;color:var(--text2);line-height:1.6}
+    .key-nota{background:#0f1a0f;border:1px solid #1a4a1a;border-radius:10px;padding:9px 13px;font-size:.73rem;color:#86d886;line-height:1.5;text-align:left}
+    .key-wrap{position:relative}
+    #input-key{width:100%;background:#0f0f1a;border:1px solid var(--border2);border-radius:10px;color:var(--text);padding:10px 38px 10px 12px;font-size:.85rem;font-family:monospace}
+    #input-key:focus{outline:none;border-color:var(--purple)}
+    #btn-ojo{position:absolute;right:9px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:1rem}
+    .enlace{font-size:.73rem;color:var(--purple);text-decoration:none}
+    #msg-key{font-size:.75rem;color:#f87171;min-height:16px}
+
+    /* ══ P1: HOME ══════════════════════════ */
+    .key-badge{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:30px;padding:5px 12px;font-size:.7rem;color:var(--text3);cursor:pointer;width:100%;max-width:560px;justify-content:space-between;margin-bottom:4px}
+    .key-badge:hover{border-color:var(--purple);color:var(--purple)}
+    .key-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
+
+    /* Stats rápidas en home */
+    .stats-home{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%;max-width:560px;margin-bottom:18px}
+    .stat-home{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center}
+    .stat-home-num{font-size:1.4rem;font-weight:800;color:var(--purple)}
+    .stat-home-lbl{font-size:.65rem;color:var(--text3);margin-top:1px}
+    .stat-home.racha .stat-home-num{color:#f59e0b}
+    .stat-home.racha{border-color:#7c3a00;background:#120d00}
+    /* Banner de racha en reporte */
+    .rep-racha-banner{background:#120d00;border:1px solid #92400e;border-radius:14px;padding:14px 16px;width:100%;max-width:560px;display:flex;align-items:center;gap:14px;margin-bottom:18px}
+    .rep-racha-ico{font-size:2.4rem;line-height:1}
+    .rep-racha-info{}
+    .rep-racha-num{font-size:1.1rem;font-weight:800;color:#fbbf24}
+    .rep-racha-msg{font-size:.75rem;color:#fde68a;margin-top:2px}
+    .rep-racha-new{background:#92400e;border-radius:6px;padding:2px 8px;font-size:.65rem;font-weight:700;color:#fff;display:inline-block;margin-left:7px;vertical-align:middle}
+
+    /* Tutores */
+    .tutores-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:100%;max-width:560px}
+    .tutor-card{background:var(--bg2);border:2px solid var(--border);border-radius:13px;padding:13px 9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:border-color .2s,background .2s;text-align:center}
+    .tutor-card:hover{border-color:var(--purple);background:var(--bg3)}
+    .tutor-card.sel{border-color:var(--purple);background:#1a1535}
+    .t-av{font-size:2rem}
+    .t-nom{font-size:.85rem;font-weight:700}
+    .t-est{font-size:.65rem;color:var(--text3);line-height:1.3}
+    .t-tag{font-size:.6rem;padding:2px 7px;border-radius:20px;background:var(--bg);border:1px solid var(--border2);color:var(--text2);margin-top:1px}
+
+    /* Temas */
+    .temas-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;width:100%;max-width:560px}
+    .tema-card{background:var(--bg2);border:2px solid var(--border);border-radius:11px;padding:11px 13px;cursor:pointer;display:flex;align-items:center;gap:9px;transition:border-color .2s,background .2s}
+    .tema-card:hover{border-color:var(--purple);background:var(--bg3)}
+    .tema-card.sel{border-color:var(--purple);background:#1a1535}
+    .t-em{font-size:1.4rem;flex-shrink:0}
+    .t-nom2{font-size:.83rem;font-weight:600}
+    .t-desc{font-size:.65rem;color:var(--text3)}
+
+    /* Barra fija home */
+    .barra-fija{position:fixed;bottom:0;left:0;right:0;background:rgba(15,15,26,.96);backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:12px 18px;display:flex;gap:8px;justify-content:center}
+    #btn-vocab-home{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;color:var(--text2);padding:13px 16px;font-size:.85rem;cursor:pointer;flex-shrink:0}
+    #btn-vocab-home:hover{border-color:var(--purple);color:var(--purple)}
+    #btn-iniciar{flex:1;max-width:340px;background:linear-gradient(135deg,var(--purple2),var(--purple3));border:none;border-radius:12px;color:#fff;padding:13px;font-size:.9rem;font-weight:700;cursor:pointer;transition:opacity .15s}
+    #btn-iniciar:disabled{opacity:.35;cursor:not-allowed}
+
+    /* ══ P2: CONVERSACIÓN ══════════════════ */
+    #p-conv{padding:12px 14px 80px}
+    .ses-hdr{width:100%;max-width:600px;display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:13px;padding:11px 13px;margin-bottom:13px}
+    .ses-av{font-size:1.9rem;flex-shrink:0}
+    .ses-info{flex:1}
+    .ses-nom{font-size:.88rem;font-weight:700}
+    .ses-tem{font-size:.7rem;color:var(--text3)}
+    #btn-fin{background:none;border:1px solid #555;border-radius:8px;color:var(--text3);padding:5px 10px;cursor:pointer;font-size:.73rem}
+    #btn-fin:hover{border-color:#f87171;color:#f87171}
+
+    .pan-voz{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:10px 13px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;width:100%;max-width:600px}
+    .pan-voz label{font-size:.73rem;color:var(--text3);white-space:nowrap}
+    #select-voz{flex:1;min-width:110px;background:var(--bg);color:var(--text);border:1px solid var(--border2);border-radius:7px;padding:4px 7px;font-size:.76rem;cursor:pointer}
+    #btn-mute.silencio{border-color:#f87171;color:#f87171}
+
+    .mic-wrap{display:flex;flex-direction:column;align-items:center;gap:7px;width:100%;max-width:600px}
+    #btn-mic{width:78px;height:78px;border-radius:50%;border:none;background:var(--purple3);cursor:pointer;font-size:1.8rem;transition:background .2s}
+    #btn-mic:disabled{opacity:.3;cursor:not-allowed}
+    #btn-mic.escuchando{background:#dc2626;animation:pr 1.2s infinite}
+    #btn-mic.hablando{background:#059669;animation:pg 1.2s infinite}
+    @keyframes pr{0%{box-shadow:0 0 0 0 rgba(220,38,38,.5)}70%{box-shadow:0 0 0 14px rgba(220,38,38,0)}}
+    @keyframes pg{0%{box-shadow:0 0 0 0 rgba(5,150,105,.5)}70%{box-shadow:0 0 0 14px rgba(5,150,105,0)}}
+    .ondas{display:none;align-items:center;gap:3px;height:13px}
+    .ondas.activo{display:flex}
+    .ondas span{display:block;width:3px;border-radius:2px;background:#4ade80;animation:onda .8s ease-in-out infinite}
+    .ondas span:nth-child(1){height:4px;animation-delay:0s}.ondas span:nth-child(2){height:9px;animation-delay:.1s}.ondas span:nth-child(3){height:13px;animation-delay:.2s}.ondas span:nth-child(4){height:9px;animation-delay:.3s}.ondas span:nth-child(5){height:4px;animation-delay:.4s}
+    @keyframes onda{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1.3)}}
+    #estado{font-size:.74rem;color:var(--text3);text-align:center;min-height:17px}
+
+    .bbl{font-size:.68rem;color:var(--text3);margin-bottom:2px}
+    #caja-u{background:var(--bg3);border:1px solid var(--border);border-radius:11px;padding:10px;min-height:44px;font-size:.88rem;line-height:1.6;color:#c4c4f0;width:100%;max-width:600px}
+    #caja-u.vacia{color:#333;font-style:italic}
+    #prov{color:var(--purple3);font-style:italic}
+    #caja-t{background:#0a1a0a;border:1px solid #1a401a;border-radius:11px;padding:12px;min-height:68px;width:100%;max-width:600px}
+    #caja-t.vacia{color:#1e3a1e;font-style:italic;font-size:.83rem}
+
+    /* Badge correcciones en sesión */
+    .badge-corr{background:#1f1200;border:1px solid #7c3a00;border-radius:6px;padding:3px 9px;font-size:.68rem;color:#fbbf24;display:inline-block}
+
+    .resp-corr{background:#1f1200;border:1px solid #7c3a00;border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:.83rem;line-height:1.5;color:#fde68a}
+    .resp-corr .et{font-size:.65rem;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:2px}
+    .resp-corr em{font-style:normal;font-size:.92rem;color:#fef3c7}
+    .resp-msg{font-size:.9rem;line-height:1.7;color:#d1fae5;padding:1px 0}
+    .resp-nota{background:#0f0f2a;border-left:3px solid var(--purple3);border-radius:0 7px 7px 0;padding:6px 10px;margin-top:8px;font-size:.77rem;line-height:1.5;color:#a5b4fc;font-style:italic}
+    .resp-nota .et{font-size:.63rem;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:1px}
+
+    .accs{display:none;gap:6px;flex-wrap:wrap;width:100%;max-width:600px}
+    .accs.vis{display:flex}
+    .btn-ac{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:#c0c0e0;padding:5px 11px;cursor:pointer;font-size:.76rem;transition:all .15s}
+    .btn-ac:hover{background:#252540;border-color:var(--purple);color:#fff}
+    #btn-prac{border-color:#92400e;color:#fbbf24}
+    #btn-prac:hover{background:#1a1000}
+
+    /* Práctica pronunciación */
+    #pan-prac{background:#120f00;border:2px solid #92400e;border-radius:13px;padding:13px;display:none;flex-direction:column;gap:9px;width:100%;max-width:600px}
+    #pan-prac.vis{display:flex}
+    .prac-tit{font-size:.7rem;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em}
+    #frase-obj{font-size:1.1rem;color:#fef3c7;line-height:1.5;font-style:italic;text-align:center;background:#0f0a00;border-radius:9px;padding:10px 12px}
+    .prac-accs{display:flex;gap:6px;flex-wrap:wrap}
+    #res-pron{display:none;flex-direction:column;gap:8px}
+    #res-pron.vis{display:flex}
+    .pals{display:flex;flex-wrap:wrap;gap:5px}
+    .pc{display:flex;flex-direction:column;align-items:center;padding:4px 9px;border-radius:7px;min-width:42px}
+    .pt{font-weight:700;font-size:.82rem;line-height:1.2}.pb{font-size:.62rem;margin-top:2px;opacity:.75}
+    .pc.ok{background:#14532d;color:#86efac}.pc.ca{background:#451a03;color:#fde68a}.pc.er{background:#7f1d1d;color:#fca5a5}.pc.ex{background:#1e1b4b;color:#a5b4fc;opacity:.7}
+    .pu-wrap{display:flex;align-items:center;gap:9px}
+    .sn{font-size:1.7rem;font-weight:800;line-height:1}
+    .sn.al{color:#4ade80}.sn.me{color:#fbbf24}.sn.ba{color:#f87171}
+    .sbarra{height:5px;background:#1a1a1a;border-radius:4px;overflow:hidden;flex:1}
+    .sfill{height:100%;border-radius:4px;transition:width .6s ease;background:linear-gradient(90deg,#dc2626,#f59e0b,#22c55e)}
+    .sdet{font-size:.67rem;color:#888}.smsg{font-size:.76rem;color:var(--text2)}
+    .ley{display:flex;gap:7px;flex-wrap:wrap;font-size:.66rem}
+    .li{display:flex;align-items:center;gap:3px}
+    .ld{width:7px;height:7px;border-radius:50%}
+    .lv{background:#14532d}.la{background:#451a03}.lr{background:#7f1d1d}
+
+    .spinner{display:inline-block;width:11px;height:11px;border:2px solid #222;border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .hist-sep{font-size:.66rem;color:#2a2a2a;text-align:center;width:100%;max-width:600px}
+    #historial{display:flex;flex-direction:column;gap:5px;width:100%;max-width:600px}
+    .mu{background:#1a1a35;color:#b0b0e0;border-radius:10px 10px 3px 10px;padding:7px 11px;font-size:.8rem;align-self:flex-end;max-width:85%}
+    .mt{background:#0a180a;color:#86d886;border-radius:10px 10px 10px 3px;padding:7px 11px;font-size:.8rem;align-self:flex-start;max-width:85%}
+    #err-msg{color:#f87171;font-size:.73rem;display:none;text-align:center;width:100%;max-width:600px}
+
+    /* ══ P3: REPORTE ═══════════════════════ */
+    #p-rep{justify-content:flex-start}
+    .rep-hdr{display:flex;align-items:center;gap:12px;width:100%;max-width:560px;margin-bottom:20px}
+    .rep-av{font-size:2.5rem}
+    .rep-info h2{font-size:1.1rem;font-weight:800;color:var(--purple)}
+    .rep-info p{font-size:.76rem;color:var(--text3)}
+
+    .rep-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:100%;max-width:560px;margin-bottom:18px}
+    .rep-stat{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+    .rep-stat-n{font-size:1.6rem;font-weight:800;color:var(--purple)}
+    .rep-stat-l{font-size:.65rem;color:var(--text3);margin-top:2px}
+
+    .rep-seccion{width:100%;max-width:560px;margin-bottom:14px}
+    .rep-seccion h3{font-size:.75rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+
+    .corr-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;margin-bottom:7px}
+    .corr-dicho{font-size:.78rem;color:#f87171;margin-bottom:4px}
+    .corr-dicho span{color:#f87171;font-style:italic}
+    .corr-ok{font-size:.85rem;color:#86efac;font-weight:600}
+    .corr-ok span{color:#4ade80}
+
+    .rep-empty{color:var(--text3);font-style:italic;font-size:.82rem;padding:10px 0}
+
+    .rep-btns{display:flex;flex-direction:column;gap:9px;width:100%;max-width:560px}
+
+    /* ══ P4: VOCABULARIO ═══════════════════ */
+    #p-vocab{justify-content:flex-start}
+    .vocab-hdr{display:flex;align-items:center;gap:10px;width:100%;max-width:560px;margin-bottom:16px}
+    .vocab-hdr h2{font-size:1.15rem;font-weight:800;color:var(--purple);flex:1}
+    #btn-clear-vocab{background:none;border:1px solid #555;border-radius:8px;color:#888;padding:5px 10px;cursor:pointer;font-size:.72rem}
+    #btn-clear-vocab:hover{border-color:#f87171;color:#f87171}
+
+    .vocab-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%;max-width:560px;margin-bottom:16px}
+    .vocab-stat{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:10px;text-align:center}
+    .vocab-stat-n{font-size:1.5rem;font-weight:800;color:var(--purple)}
+    .vocab-stat-l{font-size:.63rem;color:var(--text3);margin-top:1px}
+
+    .vocab-filtros{display:flex;gap:7px;flex-wrap:wrap;width:100%;max-width:560px;margin-bottom:12px}
+    .filtro-btn{background:var(--bg2);border:1px solid var(--border);border-radius:20px;color:var(--text2);padding:4px 12px;cursor:pointer;font-size:.75rem;transition:all .15s}
+    .filtro-btn:hover,.filtro-btn.activo{background:var(--purple3);border-color:var(--purple3);color:#fff}
+
+    #vocab-lista{width:100%;max-width:560px;display:flex;flex-direction:column;gap:8px}
+    .vocab-item{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:11px 13px}
+    .vocab-error{font-size:.78rem;color:#f87171;margin-bottom:4px}
+    .vocab-error span{font-style:italic}
+    .vocab-correcto{font-size:.9rem;color:#86efac;font-weight:600;margin-bottom:6px}
+    .vocab-correcto span{color:#4ade80}
+    .vocab-meta{display:flex;gap:8px;font-size:.65rem;color:var(--text3)}
+    .vocab-tag{background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:2px 8px}
+    .vocab-empty{color:var(--text3);font-style:italic;font-size:.85rem;text-align:center;padding:30px 0}
+
+    /* ══ SELECTOR DE NIVEL ═══════════════════ */
+    .nivel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;width:100%;max-width:560px}
+    .nivel-card{background:var(--bg2);border:2px solid var(--border);border-radius:11px;padding:10px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:border-color .2s,background .2s;text-align:center}
+    .nivel-card:hover{border-color:var(--purple);background:var(--bg3)}
+    .nivel-card.sel{border-color:var(--purple);background:#1a1535}
+    .nivel-card.sel.basico{border-color:#22c55e;background:#0a1f0a}
+    .nivel-card.sel.medio{border-color:#f59e0b;background:#1a1000}
+    .nivel-card.sel.avanzado{border-color:#818cf8;background:#0f0f2a}
+    .nv-em{font-size:1.5rem}
+    .nv-nom{font-size:.8rem;font-weight:700}
+    .nv-desc{font-size:.6rem;color:var(--text3)}
+
+    /* ══ TARJETA DE LECCIÓN ══════════════════ */
+    #pan-leccion{background:#0a1020;border:2px solid #2a3a6a;border-radius:14px;padding:15px;display:none;flex-direction:column;gap:10px;width:100%;max-width:600px}
+    #pan-leccion.vis{display:flex}
+    .lec-titulo{font-size:.68rem;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:.07em}
+    .lec-intro{font-size:.88rem;color:#c7d2fe;line-height:1.5}
+    .lec-frases{display:flex;flex-direction:column;gap:7px}
+    .lec-frase{background:#0f1530;border:1px solid #2a3a6a;border-radius:9px;padding:9px 11px}
+    .lec-en{font-size:.92rem;color:#e0e7ff;font-weight:600}
+    .lec-es{font-size:.78rem;color:#818cf8;margin-top:2px}
+    .lec-pin{font-size:.7rem;color:#4f63a8;margin-right:4px}
+    .lec-cierre{font-size:.8rem;color:#a5b4fc;font-style:italic;text-align:center;padding:2px 0}
+    #btn-empezar{background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:11px;color:#fff;padding:11px;font-size:.88rem;font-weight:700;cursor:pointer;transition:opacity .15s}
+    #btn-empezar:hover{opacity:.9}
+    #btn-skip-lec{background:none;border:none;color:#444;font-size:.7rem;cursor:pointer;text-align:center;padding:2px}
+    #btn-skip-lec:hover{color:var(--text3)}
+  </style>
+</head>
+<body>
+
+<!-- ═══════════ P0: API KEY ═══════════════ -->
+<div class="screen" id="p-key">
+  <div class="key-card">
+    <div><div class="key-icon">🔑</div><h2>Configura tu API Key</h2></div>
+    <p>Necesitas una key gratuita de Google Gemini. Se guarda <strong>solo en este dispositivo</strong>.</p>
+    <div class="key-nota">🔒 Tu key queda en el navegador (localStorage). Nunca sale de tu dispositivo.</div>
+    <div style="display:flex;flex-direction:column;gap:4px;text-align:left">
+      <label style="font-size:.73rem;color:var(--text3)">Pega tu Gemini API Key:</label>
+      <div class="key-wrap"><input type="password" id="input-key" placeholder="AIza..." autocomplete="off"/><button id="btn-ojo" onclick="toggleOjo()">👁</button></div>
+      <p id="msg-key"></p>
+    </div>
+    <a href="https://aistudio.google.com" target="_blank" class="enlace">¿No tienes una? → Obtén tu key gratis en Google AI Studio ↗</a>
+    <button class="btn-principal" onclick="guardarKey()">Guardar y continuar →</button>
+  </div>
+</div>
+
+<!-- ═══════════ P1: HOME ══════════════════ -->
+<div class="screen" id="p-home">
+  <p class="logo">El Teacher <span>IA</span></p>
+  <p class="tagline">Tu tutor de inglés con inteligencia artificial</p>
+
+  <div class="key-badge" onclick="cambiarKey()">
+    <div style="display:flex;align-items:center;gap:6px"><div class="key-dot"></div><span>API Key configurada</span></div>
+    <span>Cambiar →</span>
+  </div>
+
+  <!-- Stats rápidas -->
+  <div class="stats-home" id="stats-home">
+    <div class="stat-home"><div class="stat-home-num" id="sh-sesiones">0</div><div class="stat-home-lbl">Sesiones</div></div>
+    <div class="stat-home"><div class="stat-home-num" id="sh-vocab">0</div><div class="stat-home-lbl">Palabras</div></div>
+    <div class="stat-home"><div class="stat-home-num" id="sh-minutos">0</div><div class="stat-home-lbl">Minutos</div></div>
+    <div class="stat-home racha" id="stat-racha"><div class="stat-home-num" id="sh-racha">0</div><div class="stat-home-lbl">🔥 Racha (días)</div></div>
+  </div>
+
+  <!-- Nivel -->
+  <div style="width:100%;max-width:560px;margin-top:4px">
+    <p class="sec-titulo">Tu nivel de inglés</p>
+    <div class="nivel-grid" id="nivel-grid"></div>
+  </div>
+
+  <!-- Tutores -->
+  <div style="width:100%;max-width:560px;margin-top:16px">
+    <p class="sec-titulo">Elige tu tutor</p>
+    <div class="tutores-grid" id="tutores-grid"></div>
+  </div>
+
+  <!-- Temas -->
+  <div style="width:100%;max-width:560px;margin-top:16px">
+    <p class="sec-titulo">¿Qué quieres practicar?</p>
+    <div class="temas-grid" id="temas-grid"></div>
+  </div>
+
+  <div class="barra-fija">
+    <button id="btn-vocab-home" onclick="irVocab()">📚 Vocabulario</button>
+    <button id="btn-iniciar" disabled onclick="iniciarSesion()">Selecciona tutor y tema</button>
+  </div>
+</div>
+
+<!-- ═══════════ P2: CONVERSACIÓN ══════════ -->
+<div class="screen" id="p-conv">
+
+  <div class="ses-hdr">
+    <div class="ses-av" id="ses-av">🤖</div>
+    <div class="ses-info">
+      <div class="ses-nom" id="ses-nom">—</div>
+      <div class="ses-tem" id="ses-tem">—</div>
+    </div>
+    <span class="badge-corr" id="badge-corr" style="display:none">0 correcciones</span>
+    <button id="btn-fin" onclick="terminarSesion()">✓ Finalizar</button>
+  </div>
+
+  <div class="pan-voz">
+    <label>🔊</label>
+    <select id="select-voz" onchange="cambiarVoz()"></select>
+    <button class="btn-sm" onclick="previsualizarVoz()">▶ Probar</button>
+    <button class="btn-sm" id="btn-mute" onclick="toggleMute()">🔊 Activa</button>
+  </div>
+
+  <!-- Lección introductoria CP8 -->
+  <div id="pan-leccion">
+    <p class="lec-titulo">📖 Mini-lección — antes de practicar</p>
+    <div id="lec-contenido"><span class="spinner"></span> Preparando tu lección...</div>
+    <button id="btn-empezar" onclick="empezarPractica()" style="display:none">🎤 ¡Listo! Empezar a practicar →</button>
+    <button id="btn-skip-lec" onclick="empezarPractica()">Saltar lección →</button>
+  </div>
+
+  <div class="mic-wrap">
+    <button id="btn-mic">🎤</button>
+    <div class="ondas" id="ondas"><span></span><span></span><span></span><span></span><span></span></div>
+    <p id="estado">Presiona y habla en inglés</p>
+  </div>
+
+  <div style="width:100%;max-width:600px"><p class="bbl">🗣 Tú dijiste:</p>
+    <div id="caja-u" class="vacia"><span id="txt-fin">Aquí aparecerá lo que digas...</span><span id="prov"></span></div>
+  </div>
+
+  <div style="width:100%;max-width:600px"><p class="bbl" id="lbl-tutor">🤖 El Teacher responde:</p>
+    <div id="caja-t" class="vacia">Esperando que hables...</div>
+  </div>
+
+  <div class="accs" id="accs">
+    <button class="btn-ac" onclick="repetir()">🔁 Repetir</button>
+    <button class="btn-ac" id="btn-prac" style="display:none" onclick="abrirPrac()">🎯 Practicar frase</button>
+  </div>
+
+  <div id="pan-prac">
+    <p class="prac-tit">🎯 Modo práctica — repite esta frase:</p>
+    <div id="frase-obj"></div>
+    <div class="prac-accs">
+      <button class="btn-ac" id="btn-mic-prac" onclick="escucharPrac()">🎤 Hablar</button>
+      <button class="btn-ac" onclick="leerFrase()">🔊 Escuchar</button>
+      <button class="btn-ac" onclick="cerrarPrac()" style="border-color:#444;color:#888">✕ Cerrar</button>
+    </div>
+    <div id="res-pron">
+      <div class="ley"><div class="li"><div class="ld lv"></div>Correcto</div><div class="li"><div class="ld la"></div>Casi</div><div class="li"><div class="ld lr"></div>Error</div></div>
+      <div class="pals" id="pals-res"></div>
+      <div class="pu-wrap"><span class="sn" id="sn">—</span><div style="flex:1;display:flex;flex-direction:column;gap:4px"><div class="sbarra"><div class="sfill" id="sfill" style="width:0%"></div></div><div class="sdet" id="sdet"></div></div></div>
+      <p class="smsg" id="smsg"></p>
+    </div>
+  </div>
+
+  <p id="err-msg"></p>
+  <p class="hist-sep">— conversación anterior —</p>
+  <div id="historial"></div>
+
+</div>
+
+<!-- ═══════════ P3: REPORTE ════════════════ -->
+<div class="screen" id="p-rep">
+  <div class="rep-hdr">
+    <div class="rep-av" id="rep-av">🤖</div>
+    <div class="rep-info">
+      <h2>Resumen de sesión</h2>
+      <p id="rep-sub">—</p>
+    </div>
+  </div>
+
+  <!-- Racha diaria -->
+  <div class="rep-racha-banner" id="rep-racha-banner" style="display:none">
+    <div class="rep-racha-ico" id="rep-racha-ico">🔥</div>
+    <div class="rep-racha-info">
+      <div class="rep-racha-num" id="rep-racha-num">—</div>
+      <div class="rep-racha-msg" id="rep-racha-msg">—</div>
+    </div>
+  </div>
+
+  <div class="rep-stats">
+    <div class="rep-stat"><div class="rep-stat-n" id="rep-min">0</div><div class="rep-stat-l">⏱ minutos</div></div>
+    <div class="rep-stat"><div class="rep-stat-n" id="rep-turnos">0</div><div class="rep-stat-l">💬 intercambios</div></div>
+    <div class="rep-stat"><div class="rep-stat-n" id="rep-ncorr">0</div><div class="rep-stat-l">✅ correcciones</div></div>
+  </div>
+
+  <div class="rep-seccion">
+    <h3>Correcciones de esta sesión</h3>
+    <div id="rep-lista-corr"></div>
+  </div>
+
+  <div class="rep-seccion" id="rep-sec-vocab" style="display:none">
+    <h3>📚 Guardado en tu vocabulario</h3>
+    <p style="font-size:.78rem;color:var(--text2)">Estas frases quedaron guardadas para que las repases.</p>
+  </div>
+
+  <div class="rep-btns">
+    <button class="btn-principal" onclick="irVocab()">📚 Ver mi vocabulario</button>
+    <button class="btn-sec" onclick="irHome()">← Volver al inicio</button>
+  </div>
+</div>
+
+<!-- ═══════════ P4: VOCABULARIO ════════════ -->
+<div class="screen" id="p-vocab">
+  <div class="vocab-hdr">
+    <button class="btn-sm" onclick="irHome()" style="flex-shrink:0">← Inicio</button>
+    <h2>📚 Mi Vocabulario</h2>
+    <button id="btn-clear-vocab" onclick="limpiarVocab()">🗑 Limpiar todo</button>
+  </div>
+
+  <div class="vocab-stats">
+    <div class="vocab-stat"><div class="vocab-stat-n" id="vs-total">0</div><div class="vocab-stat-l">Palabras/frases guardadas</div></div>
+    <div class="vocab-stat"><div class="vocab-stat-n" id="vs-temas">0</div><div class="vocab-stat-l">Temas practicados</div></div>
+  </div>
+
+  <div class="vocab-filtros" id="vocab-filtros">
+    <button class="filtro-btn activo" data-filtro="todos" onclick="filtrarVocab('todos',this)">Todos</button>
+  </div>
+
+  <div id="vocab-lista"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  DATOS
+// ══════════════════════════════════════════════
+const NIVELES=[
+  {id:'basico',emoji:'🌱',nombre:'Principiante',desc:'Vocabulario simple',
+   inst:'This is a BEGINNER student. Use very simple vocabulary and short sentences. Correct ALL grammar mistakes gently. Speak slowly and clearly. Give lots of encouragement. Avoid idioms.'},
+  {id:'medio',emoji:'🔥',nombre:'Intermedio',desc:'Conversación fluida',
+   inst:'This is an INTERMEDIATE student. Use natural everyday English. Correct only significant mistakes. Keep conversation flowing. Introduce some common idioms.'},
+  {id:'avanzado',emoji:'💼',nombre:'Avanzado',desc:'Inglés avanzado',
+   inst:'This is an ADVANCED student. Use complex grammar, idioms and nuanced vocabulary. Challenge them with sophisticated language. Correct only subtle stylistic errors.'}
+];
+const TUTORES=[
+  {id:'emma',nombre:'Emma',avatar:'👩‍🏫',estilo:'Amigable y paciente',tag:'Principiantes',prompt:`You are Emma, a warm and patient English tutor. You're encouraging, speak clearly, and are great for beginners. Your student speaks Spanish. Celebrate their progress and keep corrections gentle.`},
+  {id:'mateo',nombre:'Mateo',avatar:'🧑‍💬',estilo:'Casual y divertido',tag:'Conversación',prompt:`You are Mateo, a cool and casual English conversation partner. You use everyday language and make practice feel like chatting with a friend. Your student speaks Spanish. Keep it fun and relaxed.`},
+  {id:'alex',nombre:'Alex',avatar:'👔',estilo:'Formal y profesional',tag:'Negocios',prompt:`You are Alex, a professional English coach specializing in business communication. You're precise and formal. Your student speaks Spanish. Focus on proper grammar and professional vocabulary.`}
+];
+const TEMAS=[
+  {id:'daily',emoji:'💬',nombre:'Vida diaria',desc:'Conversación del día a día',ctx:'Focus on everyday situations and daily routines.'},
+  {id:'travel',emoji:'✈️',nombre:'Viajes',desc:'Aeropuertos, hoteles',ctx:'Focus on travel: airports, hotels, restaurants, asking directions.'},
+  {id:'work',emoji:'💼',nombre:'Trabajo',desc:'Reuniones y negocios',ctx:'Focus on business English: meetings, emails, presentations.'},
+  {id:'shopping',emoji:'🛒',nombre:'Compras',desc:'Tiendas y negociación',ctx:'Focus on shopping: prices, asking for items, comparing products.'},
+  {id:'health',emoji:'🏥',nombre:'Salud',desc:'Médicos y síntomas',ctx:'Focus on health vocabulary: symptoms, doctor visits, medicines.'},
+  {id:'chat',emoji:'🎯',nombre:'Libre',desc:'Sin tema fijo',ctx:'Free conversation on any topic. Be natural and engaging.'}
+];
+const PROMPT_SUFIJO=`\n\nWhen the student speaks:\n1. Correct grammar/vocabulary mistakes kindly.\n2. Respond naturally to keep the conversation going.\n3. Explain corrections IN SPANISH briefly.\n\nKeep responses SHORT (2-3 sentences). Use this exact format:\n✅ Corrección: [corrected sentence, or "None"]\n💬 [Your response in English]\n📝 [Spanish explanation only if there was a correction]`;
+
+// ══════════════════════════════════════════════
+//  ESTADO
+// ══════════════════════════════════════════════
+let apiKey='',tutorSel=null,temaSel=null,nivelSel=null;
+let historialIA=[],ultimaResp='',frasePrac='';
+let vozSel=null,vozActiva=true,escuchando=false,textoAcum='';
+let micBloqueado=true; // bloqueado hasta que el estudiante presione "Empezar"
+// Sesión
+let sesStart=null,sesTurnos=0,sesCorrecciones=[],ultimoMsgUser='';
+
+// ══════════════════════════════════════════════
+//  NAVEGACIÓN
+// ══════════════════════════════════════════════
+const ir=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('activo'));document.getElementById(id).classList.add('activo');};
+function irHome(){window.speechSynthesis.cancel();renderHome();ir('p-home');}
+function irVocab(){ir('p-vocab');renderVocab();}
+
+// ══════════════════════════════════════════════
+//  P0: API KEY
+// ══════════════════════════════════════════════
+function toggleOjo(){const i=document.getElementById('input-key');i.type=i.type==='password'?'text':'password';}
+function guardarKey(){
+  const v=document.getElementById('input-key').value.trim();
+  const m=document.getElementById('msg-key');
+  if(!v){m.textContent='Pega tu API key primero.';return;}
+  if(v.length<20){m.textContent='Eso no parece una API key válida.';return;}
+  localStorage.setItem('teacher_api_key',v);apiKey=v;m.textContent='';
+  ir('p-home');renderHome();
+}
+function cambiarKey(){localStorage.removeItem('teacher_api_key');apiKey='';document.getElementById('input-key').value='';ir('p-key');}
+
+// ══════════════════════════════════════════════
+//  P1: HOME
+// ══════════════════════════════════════════════
+function renderHome(){
+  // Cargar nivel guardado si hay uno
+  if(!nivelSel){
+    const nid=localStorage.getItem('teacher_nivel')||'basico';
+    nivelSel=NIVELES.find(n=>n.id===nid)||NIVELES[0];
+  }
+  // Render niveles
+  document.getElementById('nivel-grid').innerHTML=NIVELES.map(n=>`
+    <div class="nivel-card${nivelSel?.id===n.id?' sel '+n.id:''}" id="nv-${n.id}" onclick="selNivel('${n.id}')">
+      <div class="nv-em">${n.emoji}</div>
+      <div class="nv-nom">${n.nombre}</div>
+      <div class="nv-desc">${n.desc}</div>
+    </div>`).join('');
+
+  // Stats globales
+  const prog=JSON.parse(localStorage.getItem('teacher_progress')||'{"sesiones":0,"minutos":0}');
+  const vocab=JSON.parse(localStorage.getItem('teacher_vocab')||'[]');
+  document.getElementById('sh-sesiones').textContent=prog.sesiones||0;
+  document.getElementById('sh-vocab').textContent=vocab.length;
+  document.getElementById('sh-minutos').textContent=prog.minutos||0;
+  // Racha — validar que sigue activa (no contar si pasaron 2+ días sin practicar)
+  const hoy=new Date().toLocaleDateString('es');
+  const ayer=new Date(Date.now()-86400000).toLocaleDateString('es');
+  const ultima=prog.ultimaFecha||'';
+  const rachaViva=ultima===hoy||ultima===ayer;
+  const racha=rachaViva?(prog.racha||0):0;
+  document.getElementById('sh-racha').textContent=racha;
+  const statRacha=document.getElementById('stat-racha');
+  if(racha>=3){statRacha.style.setProperty('--fire-glow','0 0 14px rgba(245,158,11,.35)');statRacha.style.boxShadow='0 0 14px rgba(245,158,11,.25)';}
+  else{statRacha.style.boxShadow='';}
+
+  // Tutores
+  document.getElementById('tutores-grid').innerHTML=TUTORES.map(t=>`
+    <div class="tutor-card${tutorSel?.id===t.id?' sel':''}" id="tc-${t.id}" onclick="selTutor('${t.id}')">
+      <div class="t-av">${t.avatar}</div>
+      <div class="t-nom">${t.nombre}</div>
+      <div class="t-est">${t.estilo}</div>
+      <div class="t-tag">${t.tag}</div>
+    </div>`).join('');
+  // Temas
+  document.getElementById('temas-grid').innerHTML=TEMAS.map(t=>`
+    <div class="tema-card${temaSel?.id===t.id?' sel':''}" id="tc2-${t.id}" onclick="selTema('${t.id}')">
+      <div class="t-em">${t.emoji}</div>
+      <div><div class="t-nom2">${t.nombre}</div><div class="t-desc">${t.desc}</div></div>
+    </div>`).join('');
+  actualizarBtn();
+}
+
+function selNivel(id){
+  nivelSel=NIVELES.find(n=>n.id===id);
+  localStorage.setItem('teacher_nivel',id);
+  document.querySelectorAll('.nivel-card').forEach(c=>{c.classList.remove('sel','basico','medio','avanzado');});
+  const el=document.getElementById('nv-'+id);
+  if(el){el.classList.add('sel',id);}
+}
+function selTutor(id){
+  tutorSel=TUTORES.find(t=>t.id===id);
+  document.querySelectorAll('.tutor-card').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('tc-'+id).classList.add('sel');
+  actualizarBtn();
+}
+function selTema(id){
+  temaSel=TEMAS.find(t=>t.id===id);
+  document.querySelectorAll('.tema-card').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('tc2-'+id).classList.add('sel');
+  actualizarBtn();
+}
+function actualizarBtn(){
+  const b=document.getElementById('btn-iniciar');
+  if(tutorSel&&temaSel){
+    b.disabled=false;
+    b.textContent=`${nivelSel?.emoji||'🌱'} Empezar con ${tutorSel.nombre} — ${temaSel.emoji} ${temaSel.nombre}`;
+  } else if(tutorSel){b.disabled=true;b.textContent='Ahora elige un tema';}
+  else{b.disabled=true;b.textContent='Selecciona tutor y tema';}
+}
+
+// ══════════════════════════════════════════════
+//  INICIAR SESIÓN
+// ══════════════════════════════════════════════
+function iniciarSesion(){
+  if(!tutorSel||!temaSel) return;
+  document.getElementById('ses-av').textContent=tutorSel.avatar;
+  document.getElementById('ses-nom').textContent=tutorSel.nombre;
+  document.getElementById('ses-tem').textContent=`${temaSel.emoji} ${temaSel.nombre}`;
+  document.getElementById('lbl-tutor').textContent=`${tutorSel.avatar} ${tutorSel.nombre} responde:`;
+
+  // Incluir instrucción de nivel en el prompt base
+  const nivelInst=nivelSel?.inst||NIVELES[0].inst;
+  const prompt=tutorSel.prompt+'\n\n'+nivelInst+'\n\nTopic: '+temaSel.ctx+PROMPT_SUFIJO;
+  historialIA=[
+    {role:'user',parts:[{text:prompt+'\n\nConfirm you are ready and introduce yourself briefly.'}]},
+    {role:'model',parts:[{text:`Hi! I'm ${tutorSel.nombre}, your ${nivelSel?.nombre||'English'} tutor. Today: ${temaSel.nombre}. Ready when you are! 😊`}]}
+  ];
+
+  // Reset sesión
+  sesStart=Date.now(); sesTurnos=0; sesCorrecciones=[]; ultimaResp=''; frasePrac=''; textoAcum='';
+  micBloqueado=true;
+  document.getElementById('btn-mic').disabled=true;
+  document.getElementById('caja-t').className='vacia';
+  document.getElementById('caja-t').textContent='';
+  document.getElementById('txt-fin').textContent='';
+  document.getElementById('caja-u').className='vacia';
+  document.getElementById('accs').classList.remove('vis');
+  document.getElementById('pan-prac').classList.remove('vis');
+  document.getElementById('historial').innerHTML='';
+  document.getElementById('err-msg').style.display='none';
+  document.getElementById('badge-corr').style.display='none';
+  // Mostrar panel de lección
+  const panLec=document.getElementById('pan-leccion');
+  panLec.classList.add('vis');
+  document.getElementById('lec-contenido').innerHTML='<span class="spinner"></span> Preparando tu lección...';
+  document.getElementById('btn-empezar').style.display='none';
+  document.getElementById('estado').textContent='Cargando lección...';
+  ir('p-conv');
+  cargarVoces();
+  pedirLeccion();
+}
+
+// ══════════════════════════════════════════════
+//  LECCIÓN INTRODUCTORIA CP8
+// ══════════════════════════════════════════════
+async function pedirLeccion(){
+  const leccionPrompt=`Give a mini-lesson intro for a ${nivelSel?.nombre||'beginner'} student who will practice English about "${temaSel.nombre}".
+Include exactly 3 useful phrases for this topic.
+Format EXACTLY like this (no extra text):
+🎯 [One short intro sentence about what we will practice today]
+📌 Frase 1: "[English phrase]" → [Traducción en español]
+📌 Frase 2: "[English phrase]" → [Traducción en español]
+📌 Frase 3: "[English phrase]" → [Traducción en español]
+✨ [One encouraging closing sentence in Spanish]`;
+
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
+  const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),15000);
+  try{
+    const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{role:'user',parts:[{text:leccionPrompt}]}]}),signal:ctrl.signal});
+    clearTimeout(tid);
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data=await resp.json();
+    const txt=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    renderLeccion(txt);
+  }catch(err){
+    clearTimeout(tid);
+    // Si falla la lección, simplemente saltar directo a práctica
+    document.getElementById('pan-leccion').classList.remove('vis');
+    empezarPractica();
+  }
+}
+
+function renderLeccion(txt){
+  const el=document.getElementById('lec-contenido');
+  let html='';
+  const lineas=txt.split('\n').filter(l=>l.trim());
+  const frases=[];
+  let intro='',cierre='';
+  lineas.forEach(l=>{
+    l=l.trim();
+    if(l.startsWith('🎯')){intro=l.replace('🎯','').trim();}
+    else if(l.startsWith('📌')){
+      const m=l.replace('📌','').replace(/^Frase \d+:\s*/,'').trim();
+      const p=m.split('→');
+      if(p.length>=2){frases.push({en:p[0].replace(/[""]/g,'').trim(),es:p[1].trim()});}
+      else{frases.push({en:m,es:''});}
+    } else if(l.startsWith('✨')){cierre=l.replace('✨','').trim();}
+  });
+  if(intro) html+=`<div class="lec-intro">🎯 ${intro}</div>`;
+  if(frases.length){
+    html+='<div class="lec-frases">'+frases.map((f,i)=>`
+      <div class="lec-frase">
+        <div class="lec-en"><span class="lec-pin">📌</span>"${f.en}"</div>
+        ${f.es?`<div class="lec-es">→ ${f.es}</div>`:''}
+      </div>`).join('')+'</div>';
+  }
+  if(cierre) html+=`<div class="lec-cierre">✨ ${cierre}</div>`;
+  if(!html) html=`<div class="lec-intro">¡Hoy practicamos <strong>${temaSel.nombre}</strong>! Habla con naturalidad y aprende de los errores.</div>`;
+  el.innerHTML=html;
+  document.getElementById('btn-empezar').style.display='block';
+  document.getElementById('estado').textContent='Lee la lección y luego empieza 👇';
+  // Leer intro en voz alta opcionalmente
+  if(intro && vozActiva) setTimeout(()=>hablarTexto(intro.replace(/[""]/g,''),false),400);
+}
+
+function empezarPractica(){
+  document.getElementById('pan-leccion').classList.remove('vis');
+  micBloqueado=false;
+  document.getElementById('btn-mic').disabled=false;
+  document.getElementById('caja-t').className='vacia';
+  document.getElementById('caja-t').textContent=`¡Listo! Soy ${tutorSel.nombre}. Habla cuando quieras 😊`;
+  document.getElementById('estado').textContent='✅ Tu turno — presiona y habla en inglés';
+  setTimeout(()=>hablarTexto(`Great! Let's practice ${temaSel.nombre}. Go ahead and speak!`,true),300);
+}
+
+// ══════════════════════════════════════════════
+//  TERMINAR SESIÓN → REPORTE
+// ══════════════════════════════════════════════
+function terminarSesion(){
+  window.speechSynthesis.cancel();
+  const mins=sesStart?Math.round((Date.now()-sesStart)/60000):0;
+
+  // Guardar progreso global + racha
+  const prog=JSON.parse(localStorage.getItem('teacher_progress')||'{"sesiones":0,"minutos":0}');
+  prog.sesiones=(prog.sesiones||0)+1;
+  prog.minutos=(prog.minutos||0)+mins;
+
+  // Lógica de racha diaria
+  const hoy=new Date().toLocaleDateString('es');
+  const ayer=new Date(Date.now()-86400000).toLocaleDateString('es');
+  const ultima=prog.ultimaFecha||'';
+  let rachaAnterior=prog.racha||0;
+  let esRachaNueva=false;
+  if(ultima===hoy){
+    // Ya practicó hoy — mantener racha sin cambios
+  } else if(ultima===ayer){
+    // Practicó ayer — incrementar racha
+    prog.racha=(prog.racha||0)+1;
+    esRachaNueva=true;
+  } else {
+    // Primera vez o días sin practicar — resetear a 1
+    prog.racha=1;
+    esRachaNueva=(rachaAnterior===0);
+  }
+  prog.ultimaFecha=hoy;
+  localStorage.setItem('teacher_progress',JSON.stringify(prog));
+
+  // Mostrar banner de racha en reporte
+  const banner=document.getElementById('rep-racha-banner');
+  const racha=prog.racha||1;
+  banner.style.display='flex';
+  // Ícono según nivel
+  const ico=racha>=30?'🏆':racha>=14?'💎':racha>=7?'⚡':racha>=3?'🔥':'🌱';
+  document.getElementById('rep-racha-ico').textContent=ico;
+  // Mensaje motivacional
+  const milestones={1:'¡Primer día! El viaje comienza 🌱',2:'2 días seguidos, ¡a por más! 💪',3:'¡3 días! La racha empieza 🔥',7:'¡Una semana! Eres constante ⚡',14:'¡Dos semanas! Esto es hábito 💎',30:'¡Un mes! Eres imparable 🏆'};
+  const msg=milestones[racha]||`¡${racha} días seguidos practicando! 🔥`;
+  document.getElementById('rep-racha-num').innerHTML=`${racha} ${racha===1?'día':'días'} seguidos${(esRachaNueva&&racha>1)?'<span class="rep-racha-new">+1 nuevo</span>':''}`;
+  document.getElementById('rep-racha-msg').textContent=msg;
+
+  // Poblar reporte
+  document.getElementById('rep-av').textContent=tutorSel.avatar;
+  document.getElementById('rep-sub').textContent=`${tutorSel.nombre} · ${temaSel.emoji} ${temaSel.nombre}`;
+  document.getElementById('rep-min').textContent=Math.max(mins,1);
+  document.getElementById('rep-turnos').textContent=sesTurnos;
+  document.getElementById('rep-ncorr').textContent=sesCorrecciones.length;
+
+  // Lista correcciones
+  const lista=document.getElementById('rep-lista-corr');
+  if(sesCorrecciones.length===0){
+    lista.innerHTML='<p class="rep-empty">¡Sin errores esta sesión! 🎉 Excelente trabajo.</p>';
+  } else {
+    lista.innerHTML=sesCorrecciones.map(c=>`
+      <div class="corr-item">
+        <div class="corr-dicho">✗ <span>"${c.dicho}"</span></div>
+        <div class="corr-ok">✓ <span>"${c.correcto}"</span></div>
+      </div>`).join('');
+    document.getElementById('rep-sec-vocab').style.display='block';
+  }
+  ir('p-rep');
+}
+
+// ══════════════════════════════════════════════
+//  VOCABULARIO
+// ══════════════════════════════════════════════
+function guardarEnVocab(dicho,correcto){
+  const vocab=JSON.parse(localStorage.getItem('teacher_vocab')||'[]');
+  // No duplicar si ya existe la misma corrección
+  const existe=vocab.some(v=>v.correcto===correcto);
+  if(existe) return;
+  vocab.unshift({id:Date.now(),dicho,correcto,fecha:new Date().toLocaleDateString('es'),tema:temaSel.nombre,tutor:tutorSel.nombre});
+  if(vocab.length>300) vocab.pop();
+  localStorage.setItem('teacher_vocab',JSON.stringify(vocab));
+}
+
+function renderVocab(filtro='todos'){
+  const vocab=JSON.parse(localStorage.getItem('teacher_vocab')||'[]');
+  const temas=[...new Set(vocab.map(v=>v.tema))];
+
+  document.getElementById('vs-total').textContent=vocab.length;
+  document.getElementById('vs-temas').textContent=temas.length;
+
+  // Filtros
+  const filtrosEl=document.getElementById('vocab-filtros');
+  filtrosEl.innerHTML=`<button class="filtro-btn${filtro==='todos'?' activo':''}" onclick="filtrarVocab('todos',this)">Todos</button>`+
+    temas.map(t=>`<button class="filtro-btn${filtro===t?' activo':''}" onclick="filtrarVocab('${t}',this)">${t}</button>`).join('');
+
+  const lista=document.getElementById('vocab-lista');
+  const filtrados=filtro==='todos'?vocab:vocab.filter(v=>v.tema===filtro);
+
+  if(filtrados.length===0){
+    lista.innerHTML='<div class="vocab-empty">'+
+      (vocab.length===0?'Aún no tienes palabras guardadas. ¡Empieza a practicar!':'No hay palabras de este tema todavía.')+
+    '</div>';
+    return;
+  }
+
+  lista.innerHTML=filtrados.map(v=>`
+    <div class="vocab-item">
+      <div class="vocab-error">✗ <span>"${v.dicho}"</span></div>
+      <div class="vocab-correcto">✓ <span>"${v.correcto}"</span></div>
+      <div class="vocab-meta">
+        <span class="vocab-tag">${v.tema}</span>
+        <span class="vocab-tag">con ${v.tutor}</span>
+        <span>${v.fecha}</span>
+      </div>
+    </div>`).join('');
+}
+
+function filtrarVocab(filtro,btn){
+  document.querySelectorAll('.filtro-btn').forEach(b=>b.classList.remove('activo'));
+  btn.classList.add('activo');
+  renderVocab(filtro);
+}
+
+function limpiarVocab(){
+  if(!confirm('¿Borrar todo el vocabulario guardado?')) return;
+  localStorage.removeItem('teacher_vocab');
+  renderVocab();
+}
+
+// ══════════════════════════════════════════════
+//  VOCES TTS
+// ══════════════════════════════════════════════
+function cargarVoces(){
+  const todas=window.speechSynthesis.getVoices().filter(v=>v.lang.startsWith('en'));
+  todas.sort((a,b)=>(a.name.includes('Google')?0:1)-(b.name.includes('Google')?0:1));
+  const sel=document.getElementById('select-voz');
+  sel.innerHTML='';
+  todas.forEach((v,i)=>{
+    const o=document.createElement('option');o.value=i;
+    const g=/zira|female|woman/i.test(v.name)?' ♀':/david|mark|james|male/i.test(v.name)?' ♂':'';
+    o.textContent=v.name.replace('Microsoft ','').replace(' Desktop','').replace('Google ','')+g;
+    sel.appendChild(o);
+  });
+  sel._voces=todas;if(todas.length)vozSel=todas[0];
+}
+window.speechSynthesis.onvoiceschanged=cargarVoces;
+function cambiarVoz(){const s=document.getElementById('select-voz');vozSel=s._voces?.[parseInt(s.value)]||null;}
+function previsualizarVoz(){hablarTexto("Hello! I'm your English tutor. Let's practice!",false);}
+function toggleMute(){
+  vozActiva=!vozActiva;
+  const b=document.getElementById('btn-mute');
+  b.textContent=vozActiva?'🔊 Activa':'🔇 Silencio';
+  b.classList.toggle('silencio',!vozActiva);
+  if(!vozActiva){window.speechSynthesis.cancel();detVoz();}
+}
+function hablarTexto(txt,esTutor=true){
+  if(!vozActiva)return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(txt);
+  u.lang='en-US';u.rate=0.88;u.pitch=1.05;
+  if(vozSel)u.voice=vozSel;
+  if(esTutor){
+    const bm=document.getElementById('btn-mic');
+    u.onstart=()=>{document.getElementById('estado').textContent='🔊 Hablando...';bm.classList.add('hablando');bm.textContent='🔊';bm.disabled=true;document.getElementById('ondas').classList.add('activo');};
+    u.onend=()=>{detVoz();document.getElementById('estado').textContent='✅ Tu turno';};
+    u.onerror=()=>detVoz();
+  }
+  window.speechSynthesis.speak(u);
+}
+function detVoz(){const bm=document.getElementById('btn-mic');bm.classList.remove('hablando');bm.disabled=false;bm.textContent='🎤';document.getElementById('ondas').classList.remove('activo');}
+function repetir(){if(ultimaResp)hablarTexto(exChat(ultimaResp),true);}
+function exChat(txt){const m=txt.match(/💬\s*([\s\S]+?)(?=\n📝|$)/);if(m)return m[1].trim();return txt.replace(/✅ Corrección:.*\n?/g,'').replace(/📝[\s\S]*$/g,'').replace(/💬\s*/g,'').trim();}
+
+// ══════════════════════════════════════════════
+//  RENDER RESPUESTA
+// ══════════════════════════════════════════════
+function renderResp(txt,el){
+  let h='';
+  txt.split('\n').forEach(l=>{
+    l=l.trim();if(!l)return;
+    if(l.startsWith('✅ Corrección:')){const c=l.replace('✅ Corrección:','').trim();if(c&&c.toLowerCase()!=='none'&&c!=='-')h+=`<div class="resp-corr"><span class="et">✅ Corrección</span><em>"${c}"</em></div>`;}
+    else if(l.startsWith('💬')){const m=l.replace('💬','').trim();if(m)h+=`<div class="resp-msg">${m}</div>`;}
+    else if(l.startsWith('📝')){const n=l.replace('📝','').trim();if(n)h+=`<div class="resp-nota"><span class="et">📝 Nota</span>${n}</div>`;}
+    else h+=`<div class="resp-msg">${l}</div>`;
+  });
+  el.innerHTML=h||`<div class="resp-msg">${txt}</div>`;
+}
+
+// ══════════════════════════════════════════════
+//  PRONUNCIACIÓN
+// ══════════════════════════════════════════════
+function exCorr(txt){const m=txt.match(/✅ Corrección:\s*(.+)/);if(!m)return null;const c=m[1].trim();return(c.toLowerCase()==='none'||c==='-')?null:c;}
+function abrirPrac(){if(!frasePrac)return;document.getElementById('pan-prac').classList.add('vis');document.getElementById('frase-obj').textContent=`"${frasePrac}"`;document.getElementById('res-pron').style.display='none';leerFrase();}
+function cerrarPrac(){document.getElementById('pan-prac').classList.remove('vis');window.speechSynthesis.cancel();}
+function leerFrase(){if(frasePrac)hablarTexto(frasePrac,false);}
+function lev(a,b){const m=a.length,n=b.length;const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);return dp[m][n];}
+function simil(a,b){if(a===b)return 1;const max=Math.max(a.length,b.length);return max?1-lev(a,b)/max:1;}
+let escPr=false;
+function escucharPrac(){
+  if(escPr)return;
+  document.getElementById('res-pron').style.display='none';
+  const r2=new SpeechRecognition();r2.lang='en-US';r2.interimResults=false;r2.continuous=false;
+  const b=document.getElementById('btn-mic-prac');b.textContent='🔴 Escuchando...';b.disabled=true;escPr=true;
+  r2.onresult=e=>evalPron(e.results[0][0].transcript.trim(),frasePrac);
+  r2.onend=()=>{b.textContent='🎤 Hablar de nuevo';b.disabled=false;escPr=false;};
+  r2.onerror=()=>{b.textContent='🎤 Hablar de nuevo';b.disabled=false;escPr=false;};
+  r2.start();
+}
+function evalPron(dicho,obj){
+  const cl=t=>t.toLowerCase().replace(/[^a-z0-9'\s]/g,'').trim();
+  const po=cl(obj).split(/\s+/),pu=cl(dicho).split(/\s+/);
+  const w=document.getElementById('pals-res');w.innerHTML='';
+  let pts=0;
+  po.forEach((p,i)=>{
+    const d=pu[i]||'';const s=simil(p,d);
+    let cls,bt,p2;
+    if(s===1){cls='ok';bt='✓';p2=1;}else if(s>=.70){cls='ca';bt=`≈${d}`;p2=.5;}else{cls='er';bt=d?`✗"${d}"`:'✗';p2=0;}
+    pts+=p2;
+    const c=document.createElement('div');c.className=`pc ${cls}`;
+    c.innerHTML=`<div class="pt">${p}</div><div class="pb">${bt}</div>`;
+    w.appendChild(c);
+  });
+  if(pu.length>po.length)for(let i=po.length;i<pu.length;i++){const c=document.createElement('div');c.className='pc ex';c.innerHTML=`<div class="pt">${pu[i]}</div><div class="pb">extra</div>`;w.appendChild(c);}
+  const pct=Math.round((pts/po.length)*100);
+  const sn=document.getElementById('sn');sn.textContent=pct+'%';sn.className='sn '+(pct>=80?'al':pct>=50?'me':'ba');
+  document.getElementById('sfill').style.width=pct+'%';
+  const cor=po.filter((_,i)=>simil(po[i],pu[i]||'')===1).length;
+  const cer=po.filter((_,i)=>{const s=simil(po[i],pu[i]||'');return s>=.7&&s<1;}).length;
+  document.getElementById('sdet').innerHTML=`<span style="color:#86efac">✅${cor}</span> &nbsp;<span style="color:#fde68a">⚠️${cer}</span> &nbsp;<span style="color:#fca5a5">❌${po.length-cor-cer}</span>`;
+  document.getElementById('smsg').textContent=['¡Sigue intentando! 💪','Casi, sigue practicando 🔄','¡Muy bien! 🌟','¡Excelente! 🎉'][Math.floor(pct/25)]||'¡Excelente! 🎉';
+  document.getElementById('res-pron').style.display='flex';
+}
+
+// ══════════════════════════════════════════════
+//  STT
+// ══════════════════════════════════════════════
+const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+const recognition=SpeechRecognition?new SpeechRecognition():null;
+if(recognition){recognition.lang='en-US';recognition.interimResults=true;recognition.continuous=false;}
+if(recognition){
+  recognition.onstart=()=>{escuchando=true;const b=document.getElementById('btn-mic');b.classList.add('escuchando');b.textContent='⏹';document.getElementById('estado').textContent='Escuchando...';document.getElementById('err-msg').style.display='none';};
+  recognition.onresult=e=>{let p='',f='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)f+=t+' ';else p+=t;}if(f){textoAcum+=f;document.getElementById('txt-fin').textContent=textoAcum;document.getElementById('caja-u').classList.remove('vacia');}document.getElementById('prov').textContent=p;};
+  recognition.onend=()=>{escuchando=false;const b=document.getElementById('btn-mic');b.classList.remove('escuchando');b.textContent='🎤';document.getElementById('prov').textContent='';if(textoAcum.trim()){document.getElementById('estado').textContent='Enviando...';consultarTutor(textoAcum.trim());}else document.getElementById('estado').textContent='No se detectó audio.';};
+  recognition.onerror=e=>{escuchando=false;const b=document.getElementById('btn-mic');b.classList.remove('escuchando');b.textContent='🎤';const err={'not-allowed':'Permiso denegado.','no-speech':'Sin voz.','network':'Error de red.'};mostrarErr(err[e.error]||`Error: ${e.error}`);};
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('btn-mic').addEventListener('click',()=>{
+    const b=document.getElementById('btn-mic');if(b.disabled||micBloqueado)return;
+    if(window.speechSynthesis.speaking){window.speechSynthesis.cancel();detVoz();}
+    if(escuchando){recognition.stop();return;}
+    textoAcum='';document.getElementById('txt-fin').textContent='';document.getElementById('prov').textContent='';document.getElementById('caja-u').classList.add('vacia');recognition.start();
+  });
+});
+
+// ══════════════════════════════════════════════
+//  GEMINI
+// ══════════════════════════════════════════════
+async function consultarTutor(msg){
+  ultimoMsgUser=msg;sesTurnos++;
+  const ct=document.getElementById('caja-t');
+  ct.innerHTML='<span class="spinner"></span> Pensando...';ct.classList.remove('vacia');
+  document.getElementById('accs').classList.remove('vis');
+  historialIA.push({role:'user',parts:[{text:msg}]});
+  const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),15000);
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
+  try{
+    const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:historialIA}),signal:ctrl.signal});
+    clearTimeout(tid);
+    if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||`HTTP ${resp.status}`);}
+    const data=await resp.json();
+    const ia=data.candidates?.[0]?.content?.parts?.[0]?.text||'Sin respuesta.';
+    historialIA.push({role:'model',parts:[{text:ia}]});
+    ultimaResp=ia;
+    renderResp(ia,ct);ct.classList.remove('vacia');
+    document.getElementById('accs').classList.add('vis');
+
+    // ── GUARDAR CORRECCIÓN EN VOCABULARIO ──
+    const corr=exCorr(ia);
+    const btnP=document.getElementById('btn-prac');
+    if(corr){
+      frasePrac=corr;btnP.style.display='inline-block';
+      sesCorrecciones.push({dicho:msg,correcto:corr});
+      guardarEnVocab(msg,corr);
+      // Actualizar badge
+      const badge=document.getElementById('badge-corr');
+      badge.style.display='inline-block';
+      badge.textContent=`${sesCorrecciones.length} corrección${sesCorrecciones.length!==1?'es':''}`;
+    } else {frasePrac='';btnP.style.display='none';}
+
+    hablarTexto(exChat(ia),true);
+    document.getElementById('estado').textContent='🔊 Escucha...';
+    if(historialIA.length>4){
+      agregarHist(msg,ia);
+      setTimeout(()=>{document.getElementById('txt-fin').textContent='';textoAcum='';document.getElementById('caja-u').classList.add('vacia');},4000);
+    }
+  }catch(err){
+    clearTimeout(tid);ct.classList.add('vacia');ct.textContent='';
+    mostrarErr(err.name==='AbortError'?'Tiempo agotado.':`Error: ${err.message}`);historialIA.pop();sesTurnos--;
+  }
+}
+function agregarHist(u,t){
+  const mu=document.createElement('div');mu.className='mu';mu.textContent=u;
+  const mt=document.createElement('div');mt.className='mt';mt.textContent=exChat(t);
+  const h=document.getElementById('historial');h.prepend(mt);h.prepend(mu);
+}
+function mostrarErr(msg){const e=document.getElementById('err-msg');e.textContent=msg;e.style.display='block';document.getElementById('estado').textContent='Algo salió mal.';}
+
+// ══════════════════════════════════════════════
+//  INICIO
+// ══════════════════════════════════════════════
+window.onload=()=>{
+  apiKey=localStorage.getItem('teacher_api_key')||'';
+  // Cargar nivel guardado antes de renderHome
+  const nid=localStorage.getItem('teacher_nivel')||'basico';
+  nivelSel=NIVELES.find(n=>n.id===nid)||NIVELES[0];
+  if(apiKey){ir('p-home');renderHome();}else ir('p-key');
+
+  // ── Registrar Service Worker (PWA) ───────────────
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js')
+      .then(()=>console.log('[PWA] Service worker registrado ✅'))
+      .catch(e=>console.warn('[PWA] SW error:',e));
+  }
+};
+</script>
+</body>
+</html>
